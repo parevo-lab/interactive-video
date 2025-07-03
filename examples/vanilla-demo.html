@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Video - Vanilla JS Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .video-container {
+            margin: 20px 0;
+        }
+
+        .controls {
+            margin-top: 15px;
+        }
+
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background: #0056b3;
+        }
+
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .instructions {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>@parevo/interactive-video - Vanilla JS Demo</h1>
+
+    <div class="instructions">
+        <h3>Nasıl Test Edilir:</h3>
+        <ol>
+            <li>Video oynatmaya başlayın</li>
+            <li>10. saniyede video duracak ve ilk soru çıkacak</li>
+            <li>Yanlış cevap verirseniz video 5. saniyeye geri saracak</li>
+            <li>Doğru cevap verirseniz video devam edecek</li>
+            <li>25. ve 40. saniyede aynı işlem tekrarlanacak</li>
+        </ol>
+    </div>
+
+    <div class="demo-section">
+        <h2>Demo Video</h2>
+        <div id="video-container" class="video-container"></div>
+        
+        <div class="controls">
+            <button onclick="player.play()">Play</button>
+            <button onclick="player.pause()">Pause</button>
+            <button onclick="player.currentTime(0)">Restart</button>
+            <button onclick="showCurrentTime()">Current Time</button>
+        </div>
+
+        <div id="log" class="log">
+            <div><strong>Event Log:</strong></div>
+            <div id="log-content">Henüz olay yok... Video oynatın ve soruları cevaplayın!</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import from the built core library
+        import { InteractiveVideo } from '../dist/core/index.js';
+
+        const config = {
+            questions: [
+                {
+                    id: 'q1',
+                    triggerTime: 10,
+                    question: 'Video 10 saniyede durup bu soruyu soruyor. Doğru cevap nedir?',
+                    options: [
+                        { id: 'a1', text: 'Bu doğru cevap', isCorrect: true },
+                        { id: 'a2', text: 'Bu yanlış cevap', isCorrect: false },
+                        { id: 'a3', text: 'Bu da yanlış', isCorrect: false }
+                    ],
+                    rewindTime: 5
+                },
+                {
+                    id: 'q2',
+                    triggerTime: 25,
+                    question: 'Video 25 saniyede durup ikinci soruyu soruyor. Hangi seçenek doğru?',
+                    options: [
+                        { id: 'b1', text: 'Birinci seçenek', isCorrect: false },
+                        { id: 'b2', text: 'İkinci seçenek (DOĞRU)', isCorrect: true },
+                        { id: 'b3', text: 'Üçüncü seçenek', isCorrect: false },
+                        { id: 'b4', text: 'Dördüncü seçenek', isCorrect: false }
+                    ],
+                    rewindTime: 15
+                },
+                {
+                    id: 'q3',
+                    triggerTime: 40,
+                    question: 'Son soru: Video 40 saniyede duruyor. Test tamamlanmak üzere!',
+                    options: [
+                        { id: 'c1', text: 'Yanlış cevap', isCorrect: false },
+                        { id: 'c2', text: 'Doğru cevap ✓', isCorrect: true }
+                    ],
+                    rewindTime: 30
+                }
+            ]
+        };
+
+        const options = {
+            src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            config: config,
+            width: 800,
+            height: 450,
+            controls: true,
+            onQuestionAnswered: (questionId, selectedOptionId, isCorrect) => {
+                const message = `Soru ${questionId}: ${selectedOptionId} seçeneği ${isCorrect ? 'DOĞRU' : 'YANLIŞ'}`;
+                addLog(message);
+            },
+            onVideoEnd: () => {
+                addLog('Video tamamlandı! 🎉');
+            },
+            onError: (error) => {
+                addLog('Hata: ' + error.message);
+            }
+        };
+
+        // Create interactive video instance
+        window.player = new InteractiveVideo('#video-container', options);
+
+        // Event listeners
+        window.player.on('questionAnswered', (data) => {
+            addLog(`Event: Question ${data.questionId} answered - ${data.isCorrect ? 'Correct' : 'Wrong'}`);
+        });
+
+        window.player.on('videoEnd', () => {
+            addLog('Event: Video ended');
+        });
+
+        // Helper functions
+        function addLog(message) {
+            const logContent = document.getElementById('log-content');
+            const time = new Date().toLocaleTimeString();
+            logContent.innerHTML += `<div>[${time}] ${message}</div>`;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        window.showCurrentTime = function() {
+            const currentTime = window.player.currentTime();
+            addLog(`Current time: ${currentTime.toFixed(2)} seconds`);
+        };
+
+        addLog('Interactive video loaded successfully!');
+    </script>
+</body>
+</html>
